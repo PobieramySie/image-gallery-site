@@ -1,25 +1,89 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Image Gallery</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Elegant Image Gallery</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
-    body { font-family: sans-serif; text-align: center; margin: 2em; }
-    img { width: 200px; margin: 10px; border: 1px solid #ccc; }
-    #gallery { display: flex; flex-wrap: wrap; justify-content: center; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f8f9fa;
+      margin: 0;
+      padding: 2em;
+      color: #333;
+      text-align: center;
+    }
+
+    h2 {
+      font-weight: 600;
+      margin-bottom: 1em;
+      color: #2c3e50;
+    }
+
+    .upload-container {
+      background-color: #ffffff;
+      border-radius: 8px;
+      padding: 2em;
+      margin: 0 auto 2em;
+      max-width: 500px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    input[type="file"] {
+      margin-bottom: 1em;
+    }
+
+    button {
+      background-color: #2d89ef;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 1em;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #1c6cd3;
+    }
+
+    #gallery {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 16px;
+    }
+
+    #gallery img {
+      width: 220px;
+      height: auto;
+      border-radius: 6px;
+      object-fit: cover;
+      border: 1px solid #ddd;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    #gallery img:hover {
+      transform: scale(1.03);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
   </style>
 </head>
 <body>
 
   <h2>Upload an Image</h2>
-  <input type="file" id="fileInput" accept="image/*" />
-  <button onclick="uploadImage()">Upload</button>
+  <div class="upload-container">
+    <input type="file" id="fileInput" accept="image/*" />
+    <br />
+    <button onclick="uploadImage()">Upload</button>
+  </div>
 
   <h2>Gallery</h2>
   <div id="gallery"></div>
 
   <script>
-    const API_URL = 'https://gallery-api-1000866423573.europe-west1.run.app'; 
+    const API_URL = 'https://gallery-api-1000866423573.europe-west1.run.app';
 
     async function uploadImage() {
       const file = document.getElementById('fileInput').files[0];
@@ -33,6 +97,9 @@
           method: 'POST',
           body: formData
         });
+
+        if (!res.ok) throw new Error("Upload failed");
+
         const data = await res.json();
         alert('Uploaded: ' + data.url);
         loadImages();
@@ -45,6 +112,8 @@
     async function loadImages() {
       try {
         const res = await fetch(`${API_URL}/images`);
+        if (!res.ok) throw new Error("Failed to fetch images");
+
         const urls = await res.json();
         const gallery = document.getElementById('gallery');
         gallery.innerHTML = urls.map(url =>
