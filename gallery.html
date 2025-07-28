@@ -11,7 +11,7 @@
       background-color: #fffaf7;
       color: #444;
       margin: 0;
-      padding: 2rem;
+      padding: 1.5rem;
       text-align: center;
     }
 
@@ -23,23 +23,25 @@
 
     #gallery {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 16px;
-      padding: 1em 0;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); /* smaller min size */
+      gap: 12px;
+      padding: 0.5em 0;
     }
 
     #gallery img {
       width: 100%;
-      height: auto;
+      height: 120px; /* fixed height for uniformity */
       border-radius: 8px;
       object-fit: cover;
       border: 1px solid #e0d7cd;
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
       transition: transform 0.2s ease;
+      cursor: pointer;
     }
 
     #gallery img:hover {
-      transform: scale(1.02);
+      transform: scale(1.05);
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.1);
     }
 
     a.button {
@@ -50,6 +52,8 @@
       padding: 10px 24px;
       border-radius: 30px;
       text-decoration: none;
+      font-weight: 600;
+      transition: background-color 0.3s ease;
     }
 
     a.button:hover {
@@ -59,6 +63,13 @@
     @media (max-width: 600px) {
       h1 {
         font-size: 1.5em;
+      }
+      #gallery {
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+        gap: 8px;
+      }
+      #gallery img {
+        height: 90px;
       }
     }
   </style>
@@ -73,20 +84,20 @@
   <script>
     const API_URL = 'https://gallery-api-1000866423573.europe-west1.run.app';
 
-async function loadImages() {
-  try {
-    const res = await fetch(`${API_URL}/images`);
-    if (!res.ok) throw new Error('Nie udało się załadować zdjęć');
-    const urls = await res.json();
-    const gallery = document.getElementById('gallery');
-    gallery.innerHTML = urls.map(url =>
-      `<img src="${url}" alt="Wspomnienie ze ślubu">`
-    ).join('');
-  } catch (err) {
-    console.error(err);
-    alert('Nie można załadować galerii.');
-  }
-}
+    async function loadImages() {
+      try {
+        const res = await fetch(`${API_URL}/images`);
+        if (!res.ok) throw new Error('Nie udało się załadować zdjęć');
+        const urls = await res.json();
+        const gallery = document.getElementById('gallery');
+        gallery.innerHTML = urls.map(url =>
+          `<img src="${url}" alt="Wspomnienie ze ślubu" />`
+        ).join('');
+      } catch (err) {
+        console.error(err);
+        alert('Nie można załadować galerii.');
+      }
+    }
 
     window.onload = loadImages;
   </script>
