@@ -21,25 +21,24 @@
       color: #a8876a;
     }
 
-    #gallery {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 12px;
-      padding: 0.5em 0;
-    }
-
-    #gallery img {
-      width: 100%;
-      height: 120px;
-      border-radius: 8px;
-      object-fit: cover;
-      border: 1px solid #e0d7cd;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-      transition: transform 0.2s ease;
-      cursor: pointer;
-      /* lazy loading */
-      loading: lazy;
-    }
+  #gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 16px;
+    padding: 1em 0;
+  }
+  
+  #gallery img {
+    width: 100%;           /* full width of grid cell */
+    aspect-ratio: 1 / 1;   /* keep height equal to width */
+    border-radius: 8px;
+    object-fit: cover;     /* crop image to fill square */
+    border: 1px solid #e0d7cd;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease;
+    cursor: pointer;
+    loading: lazy;
+  }
 
     #gallery img:hover {
       transform: scale(1.05);
