@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Galeria Weselna</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
   <style>
     body {
       font-family: 'Inter', sans-serif;
@@ -23,20 +23,22 @@
 
     #gallery {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); /* smaller min size */
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
       gap: 12px;
       padding: 0.5em 0;
     }
 
     #gallery img {
       width: 100%;
-      height: 120px; /* fixed height for uniformity */
+      height: 120px;
       border-radius: 8px;
       object-fit: cover;
       border: 1px solid #e0d7cd;
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
       transition: transform 0.2s ease;
       cursor: pointer;
+      /* lazy loading */
+      loading: lazy;
     }
 
     #gallery img:hover {
@@ -60,6 +62,21 @@
       background-color: #9c7c61;
     }
 
+    #loadMoreBtn {
+      margin-top: 1.5em;
+      background-color: #a8876a;
+      border: none;
+      padding: 12px 28px;
+      border-radius: 25px;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    #loadMoreBtn:hover {
+      background-color: #8c7356;
+    }
+
     @media (max-width: 600px) {
       h1 {
         font-size: 1.5em;
@@ -72,6 +89,27 @@
         height: 90px;
       }
     }
+
+    /* Lightbox overlay */
+    #lightboxOverlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0,0,0,0.8);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      cursor: zoom-out;
+    }
+
+    #lightboxOverlay img {
+      max-width: 90%;
+      max-height: 90%;
+      border-radius: 12px;
+      box-shadow: 0 0 30px rgba(0,0,0,0.7);
+    }
   </style>
 </head>
 <body>
@@ -79,27 +117,73 @@
   <h1>Galeria zdjęć weselnych</h1>
   <div id="gallery"></div>
 
+  <button id="loadMoreBtn" onclick="loadMoreImages()">Załaduj więcej</button>
+
   <a href="index.html" class="button">← Powrót</a>
+
+  <!-- Lightbox overlay -->
+  <div id="lightboxOverlay" onclick="closeLightbox()">
+    <img id="lightboxImage" src="" alt="Expanded view" />
+  </div>
 
   <script>
     const API_URL = 'https://gallery-api-1000866423573.europe-west1.run.app';
 
-    async function loadImages() {
+    let allUrls = [];
+    let currentIndex = 0;
+    const pageSize = 20;
+
+    async function fetchAllImages() {
       try {
         const res = await fetch(`${API_URL}/images`);
         if (!res.ok) throw new Error('Nie udało się załadować zdjęć');
-        const urls = await res.json();
-        const gallery = document.getElementById('gallery');
-        gallery.innerHTML = urls.map(url =>
-          `<img src="${url}" alt="Wspomnienie ze ślubu" />`
-        ).join('');
+        allUrls = await res.json();
+        currentIndex = 0;
+        displayImages();
       } catch (err) {
         console.error(err);
         alert('Nie można załadować galerii.');
       }
     }
 
-    window.onload = loadImages;
+    function displayImages() {
+      const gallery = document.getElementById('gallery');
+      const nextBatch = allUrls.slice(currentIndex, currentIndex + pageSize);
+      const imgsHtml = nextBatch.map(url =>
+        `<img src="${url}" alt="Wspomnienie ze ślubu" loading="lazy" onclick="openLightbox('${url}')" />`
+      ).join('');
+      gallery.insertAdjacentHTML('beforeend', imgsHtml);
+      currentIndex += pageSize;
+
+      // Hide load more button if no more images
+      const loadMoreBtn = document.getElementById('loadMoreBtn');
+      if (currentIndex >= allUrls.length) {
+        loadMoreBtn.style.display = 'none';
+      } else {
+        loadMoreBtn.style.display = 'inline-block';
+      }
+    }
+
+    function loadMoreImages() {
+      displayImages();
+    }
+
+    function openLightbox(url) {
+      const overlay = document.getElementById('lightboxOverlay');
+      const lightboxImg = document.getElementById('lightboxImage');
+      lightboxImg.src = url;
+      overlay.style.display = 'flex';
+      document.body.style.overflow = 'hidden'; // prevent background scroll
+    }
+
+    function closeLightbox() {
+      const overlay = document.getElementById('lightboxOverlay');
+      overlay.style.display = 'none';
+      document.getElementById('lightboxImage').src = '';
+      document.body.style.overflow = 'auto';
+    }
+
+    window.onload = fetchAllImages;
   </script>
 
 </body>
