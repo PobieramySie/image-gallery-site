@@ -1,41 +1,63 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
   <title>Image Gallery</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; margin: 2em; }
+    img { width: 200px; margin: 10px; border: 1px solid #ccc; }
+    #gallery { display: flex; flex-wrap: wrap; justify-content: center; }
+  </style>
 </head>
 <body>
-  <h2>Upload Image</h2>
-  <input type="file" id="fileInput" />
+
+  <h2>Upload an Image</h2>
+  <input type="file" id="fileInput" accept="image/*" />
   <button onclick="uploadImage()">Upload</button>
 
   <h2>Gallery</h2>
   <div id="gallery"></div>
 
   <script>
-    const API_URL = 'https://YOUR_CLOUD_RUN_URL';
+    const API_URL = 'https://YOUR_CLOUD_RUN_URL'; // 🔁 Replace with your backend URL
 
     async function uploadImage() {
       const file = document.getElementById('fileInput').files[0];
+      if (!file) return alert('Please select a file.');
+
       const formData = new FormData();
       formData.append('image', file);
 
-      const res = await fetch(`${API_URL}/upload`, {
-        method: 'POST',
-        body: formData
-      });
-      const data = await res.json();
-      alert('Uploaded: ' + data.url);
-      loadImages();
+      try {
+        const res = await fetch(`${API_URL}/upload`, {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        alert('Uploaded: ' + data.url);
+        loadImages();
+      } catch (err) {
+        console.error(err);
+        alert('Upload failed.');
+      }
     }
 
     async function loadImages() {
-      const res = await fetch(`${API_URL}/images`);
-      const urls = await res.json();
-      const gallery = document.getElementById('gallery');
-      gallery.innerHTML = urls.map(url => `<img src="${url}" width="200" style="margin:10px;">`).join('');
+      try {
+        const res = await fetch(`${API_URL}/images`);
+        const urls = await res.json();
+        const gallery = document.getElementById('gallery');
+        gallery.innerHTML = urls.map(url =>
+          `<img src="${url}" alt="uploaded image">`
+        ).join('');
+      } catch (err) {
+        console.error(err);
+        alert('Failed to load images.');
+      }
     }
 
     window.onload = loadImages;
   </script>
+
 </body>
 </html>
