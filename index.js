@@ -9,7 +9,7 @@ app.use(cors());
 
 // Set up Google Cloud Storage
 const storage = new Storage();
-const bucketName = 'YOUR_BUCKET_NAME'; // 🔁 Replace this
+const bucketName = 'my-image-gallery-bucket';
 const bucket = storage.bucket(bucketName);
 
 // Configure multer for in-memory upload
