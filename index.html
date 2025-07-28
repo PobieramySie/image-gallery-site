@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Image Gallery</title>
+</head>
+<body>
+  <h2>Upload Image</h2>
+  <input type="file" id="fileInput" />
+  <button onclick="uploadImage()">Upload</button>
+
+  <h2>Gallery</h2>
+  <div id="gallery"></div>
+
+  <script>
+    const API_URL = 'https://YOUR_CLOUD_RUN_URL';
+
+    async function uploadImage() {
+      const file = document.getElementById('fileInput').files[0];
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const res = await fetch(`${API_URL}/upload`, {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      alert('Uploaded: ' + data.url);
+      loadImages();
+    }
+
+    async function loadImages() {
+      const res = await fetch(`${API_URL}/images`);
+      const urls = await res.json();
+      const gallery = document.getElementById('gallery');
+      gallery.innerHTML = urls.map(url => `<img src="${url}" width="200" style="margin:10px;">`).join('');
+    }
+
+    window.onload = loadImages;
+  </script>
+</body>
+</html>
