@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Wedding Gallery</title>
+  <title>Galeria Weselna</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
     body {
@@ -65,28 +65,28 @@
 </head>
 <body>
 
-  <h1>Wedding Photo Gallery</h1>
+  <h1>Galeria zdjęć weselnych</h1>
   <div id="gallery"></div>
 
-  <a href="index.html" class="button">← Back to Home</a>
+  <a href="index.html" class="button">← Powrót</a>
 
   <script>
     const API_URL = 'https://gallery-api-1000866423573.europe-west1.run.app';
 
-    async function loadImages() {
-      try {
-        const res = await fetch(`${API_URL}/images`);
-        if (!res.ok) throw new Error('Failed to load images');
-        const urls = await res.json();
-        const gallery = document.getElementById('gallery');
-        gallery.innerHTML = urls.map(url =>
-          `<img src="${url}" alt="Wedding memory">`
-        ).join('');
-      } catch (err) {
-        console.error(err);
-        alert('Could not load gallery.');
-      }
-    }
+async function loadImages() {
+  try {
+    const res = await fetch(`${API_URL}/images`);
+    if (!res.ok) throw new Error('Nie udało się załadować zdjęć');
+    const urls = await res.json();
+    const gallery = document.getElementById('gallery');
+    gallery.innerHTML = urls.map(url =>
+      `<img src="${url}" alt="Wspomnienie ze ślubu">`
+    ).join('');
+  } catch (err) {
+    console.error(err);
+    alert('Nie można załadować galerii.');
+  }
+}
 
     window.onload = loadImages;
   </script>
