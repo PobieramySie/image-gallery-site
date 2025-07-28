@@ -21,24 +21,24 @@
       color: #a8876a;
     }
 
-  #gallery {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-    gap: 16px;
-    padding: 1em 0;
-  }
-  
-  #gallery img {
-    width: 100%;           /* full width of grid cell */
-    aspect-ratio: 1 / 1;   /* keep height equal to width */
-    border-radius: 8px;
-    object-fit: cover;     /* crop image to fill square */
-    border: 1px solid #e0d7cd;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-    transition: transform 0.2s ease;
-    cursor: pointer;
-    loading: lazy;
-  }
+    #gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      gap: 16px;
+      padding: 1em 0;
+    }
+    
+    #gallery img {
+      width: 100%;           /* full width of grid cell */
+      aspect-ratio: 1 / 1;   /* keep height equal to width */
+      border-radius: 8px;
+      object-fit: cover;     /* crop image to fill square */
+      border: 1px solid #e0d7cd;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+      transition: transform 0.2s ease;
+      cursor: pointer;
+      loading: lazy;
+    }
 
     #gallery img:hover {
       transform: scale(1.05);
@@ -101,13 +101,39 @@
       align-items: center;
       z-index: 1000;
       cursor: zoom-out;
+      flex-direction: column;
     }
 
-    #lightboxOverlay img {
+    #lightboxImage {
       max-width: 90%;
-      max-height: 90%;
+      max-height: 80%;
       border-radius: 12px;
       box-shadow: 0 0 30px rgba(0,0,0,0.7);
+      margin-bottom: 1rem;
+    }
+
+    /* Next / Prev Buttons */
+    #lightboxControls {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    .lightboxBtn {
+      background: rgba(255, 255, 255, 0.8);
+      border: none;
+      padding: 10px 20px;
+      font-size: 1rem;
+      border-radius: 30px;
+      cursor: pointer;
+      font-weight: 600;
+      color: #444;
+      user-select: none;
+      transition: background-color 0.3s ease;
+    }
+    .lightboxBtn:hover {
+      background: #b49876;
+      color: white;
     }
   </style>
 </head>
@@ -121,8 +147,12 @@
   <a href="index.html" class="button">← Powrót</a>
 
   <!-- Lightbox overlay -->
-  <div id="lightboxOverlay" onclick="closeLightbox()">
+  <div id="lightboxOverlay" onclick="closeLightbox(event)">
     <img id="lightboxImage" src="" alt="Expanded view" />
+    <div id="lightboxControls">
+      <button class="lightboxBtn" onclick="prevImage(event)">◀ Poprzednie</button>
+      <button class="lightboxBtn" onclick="nextImage(event)">Następne ▶</button>
+    </div>
   </div>
 
   <script>
@@ -131,6 +161,7 @@
     let allUrls = [];
     let currentIndex = 0;
     const pageSize = 20;
+    let currentLightboxIndex = -1;
 
     async function fetchAllImages() {
       try {
@@ -148,8 +179,8 @@
     function displayImages() {
       const gallery = document.getElementById('gallery');
       const nextBatch = allUrls.slice(currentIndex, currentIndex + pageSize);
-      const imgsHtml = nextBatch.map(url =>
-        `<img src="${url}" alt="Wspomnienie ze ślubu" loading="lazy" onclick="openLightbox('${url}')" />`
+      const imgsHtml = nextBatch.map((url, idx) =>
+        `<img src="${url}" alt="Wspomnienie ze ślubu" loading="lazy" onclick="openLightbox(${currentIndex + idx})" />`
       ).join('');
       gallery.insertAdjacentHTML('beforeend', imgsHtml);
       currentIndex += pageSize;
@@ -167,19 +198,48 @@
       displayImages();
     }
 
-    function openLightbox(url) {
+    function openLightbox(index) {
+      currentLightboxIndex = index;
       const overlay = document.getElementById('lightboxOverlay');
       const lightboxImg = document.getElementById('lightboxImage');
-      lightboxImg.src = url;
+      lightboxImg.src = allUrls[index];
       overlay.style.display = 'flex';
       document.body.style.overflow = 'hidden'; // prevent background scroll
     }
 
-    function closeLightbox() {
-      const overlay = document.getElementById('lightboxOverlay');
-      overlay.style.display = 'none';
-      document.getElementById('lightboxImage').src = '';
-      document.body.style.overflow = 'auto';
+    function closeLightbox(event) {
+      // Only close if clicking on overlay itself, not buttons or image
+      if (event.target.id === 'lightboxOverlay') {
+        const overlay = document.getElementById('lightboxOverlay');
+        overlay.style.display = 'none';
+        document.getElementById('lightboxImage').src = '';
+        document.body.style.overflow = 'auto';
+      }
+    }
+
+    function prevImage(event) {
+      event.stopPropagation(); // prevent closing lightbox
+      if (currentLightboxIndex > 0) {
+        currentLightboxIndex--;
+      } else {
+        currentLightboxIndex = allUrls.length - 1; // loop to last
+      }
+      updateLightboxImage();
+    }
+
+    function nextImage(event) {
+      event.stopPropagation();
+      if (currentLightboxIndex < allUrls.length - 1) {
+        currentLightboxIndex++;
+      } else {
+        currentLightboxIndex = 0; // loop to first
+      }
+      updateLightboxImage();
+    }
+
+    function updateLightboxImage() {
+      const lightboxImg = document.getElementById('lightboxImage');
+      lightboxImg.src = allUrls[currentLightboxIndex];
     }
 
     window.onload = fetchAllImages;
