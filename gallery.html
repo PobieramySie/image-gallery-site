@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wedding Gallery</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #fffaf7;
+      color: #444;
+      margin: 0;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 2em;
+      margin-bottom: 1em;
+      color: #a8876a;
+    }
+
+    #gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      padding: 1em 0;
+    }
+
+    #gallery img {
+      width: 100%;
+      height: auto;
+      border-radius: 8px;
+      object-fit: cover;
+      border: 1px solid #e0d7cd;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+      transition: transform 0.2s ease;
+    }
+
+    #gallery img:hover {
+      transform: scale(1.02);
+    }
+
+    a.button {
+      display: inline-block;
+      margin-top: 2em;
+      background-color: #b49876;
+      color: white;
+      padding: 10px 24px;
+      border-radius: 30px;
+      text-decoration: none;
+    }
+
+    a.button:hover {
+      background-color: #9c7c61;
+    }
+
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 1.5em;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Wedding Photo Gallery</h1>
+  <div id="gallery"></div>
+
+  <a href="index.html" class="button">← Back to Home</a>
+
+  <script>
+    const API_URL = 'https://gallery-api-1000866423573.europe-west1.run.app';
+
+    async function loadImages() {
+      try {
+        const res = await fetch(`${API_URL}/images`);
+        if (!res.ok) throw new Error('Failed to load images');
+        const urls = await res.json();
+        const gallery = document.getElementById('gallery');
+        gallery.innerHTML = urls.map(url =>
+          `<img src="${url}" alt="Wedding memory">`
+        ).join('');
+      } catch (err) {
+        console.error(err);
+        alert('Could not load gallery.');
+      }
+    }
+
+    window.onload = loadImages;
+  </script>
+
+</body>
+</html>
