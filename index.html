@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Nasze Wspomnienia Weselne</title>
-  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Inter:wght@400;600&display=swap" rel="stylesheet" />
   <style>
     body {
       font-family: 'Inter', sans-serif;
@@ -14,20 +14,17 @@
       padding: 2rem;
       margin: 0;
     }
-
     h1 {
       font-family: 'Great Vibes', cursive;
       font-size: 2.5em;
       margin-bottom: 0.5em;
       color: #a8876a;
     }
-
     p {
       max-width: 600px;
       margin: 0 auto 2em;
       font-size: 1.1em;
     }
-
     .button {
       display: inline-block;
       background-color: #b49876;
@@ -41,22 +38,18 @@
       text-decoration: none;
       transition: background 0.3s;
     }
-
     .button:hover {
       background-color: #9c7c61;
     }
-
     footer {
       margin-top: 3rem;
       font-size: 0.9em;
       color: #999;
     }
-
     @media (max-width: 600px) {
       h1 {
         font-size: 2em;
       }
-
       .button {
         width: 80%;
       }
@@ -73,7 +66,8 @@
   <a href="#" onclick="document.getElementById('fileInput').click();" class="button">Prześlij zdjęcia lub filmy</a>
   <a href="gallery.html" class="button">Zobacz całą galerię</a>
 
-  <input type="file" id="fileInput" accept="image/*,video/*" style="display:none" onchange="uploadFile()" />
+  <!-- Allow multiple files -->
+  <input type="file" id="fileInput" accept="image/*,video/*" multiple style="display:none" onchange="uploadFiles()" />
 
   <footer>
     Dziękujemy za wspólne wspomnienia!
@@ -81,30 +75,40 @@
 
   <script>
     const API_URL = 'https://gallery-api-1000866423573.europe-west1.run.app';
-  
-    async function uploadFile() {
-      const file = document.getElementById('fileInput').files[0];
-      if (!file) return;
-  
+
+    async function uploadFiles() {
+      const input = document.getElementById('fileInput');
+      if (!input.files.length) return;
+
       const formData = new FormData();
-      formData.append('file', file); // Use 'file' instead of 'image' if backend expects general files
-  
+      // Append all selected files under the same field name "files"
+      for (const file of input.files) {
+        formData.append('files', file);
+      }
+
       try {
         const res = await fetch(`${API_URL}/upload`, {
           method: 'POST',
-          body: formData
+          body: formData,
         });
-  
+
         if (!res.ok) throw new Error('Upload failed');
+
         const data = await res.json();
-        alert('Uploaded: ' + data.url);
+        if (data.urls && Array.isArray(data.urls)) {
+          alert('Uploaded files:\n' + data.urls.join('\n'));
+        } else {
+          alert('Upload succeeded, but no URLs returned.');
+        }
       } catch (err) {
         console.error(err);
         alert('Upload failed.');
+      } finally {
+        // Reset input after upload so same files can be re-uploaded if needed
+        input.value = '';
       }
     }
   </script>
-
 
 </body>
 </html>
