@@ -170,145 +170,155 @@
   </div>
 
   <script>
-    const API_URL = 'https://gallery-api-1000866423573.europe-west1.run.app';
+  const API_URL = 'https://gallery-api-1000866423573.europe-west1.run.app';
 
-    let allUrls = [];
-    let currentIndex = 0;
-    const pageSize = 20;
-    let currentLightboxIndex = -1;
+  let allUrls = [];
+  let currentIndex = 0;
+  const pageSize = 20;
+  let currentLightboxIndex = -1;
 
-    function isVideo(url) {
-      return url.match(/\.(mp4|webm|ogg)$/i);
-    }
+  function isVideo(url) {
+    return url.match(/\.(mp4|webm|ogg)$/i);
+  }
 
-    async function fetchAllImages() {
-      try {
-        const res = await fetch(`${API_URL}/images`);
-        if (!res.ok) throw new Error('Nie udało się załadować zdjęć');
-        allUrls = await res.json();
-        currentIndex = 0;
-        document.getElementById('gallery').innerHTML = '';
-        displayImages();
-      } catch (err) {
-        console.error(err);
-        alert('Nie można załadować galerii.');
-      }
-    }
-
-    function displayImages() {
-      const gallery = document.getElementById('gallery');
-      const nextBatch = allUrls.slice(currentIndex, currentIndex + pageSize);
-      
-      const mediaHtml = nextBatch.map((url, idx) => {
-        if (isVideo(url)) {
-          return `
-            <video
-              src="${url}"
-              loading="lazy"
-              onclick="openLightbox(${currentIndex + idx})"
-              muted
-              playsinline
-              preload="metadata"
-              style="width: 100%; aspect-ratio: 1 / 1; border-radius: 8px; cursor: pointer; object-fit: cover; border: 1px solid #e0d7cd; box-shadow: 0 4px 10px rgba(0,0,0,0.05);"
-            ></video>`;
-        } else {
-          return `
-            <img 
-              src="${url}" 
-              alt="Wspomnienie ze ślubu" 
-              loading="lazy" 
-              onclick="openLightbox(${currentIndex + idx})"
-              onerror="this.onerror=null; this.src='placeholder.jpg';"
-            />`;
-        }
-      }).join('');
-      
-      gallery.insertAdjacentHTML('beforeend', mediaHtml);
-      currentIndex += pageSize;
-
-      const loadMoreBtn = document.getElementById('loadMoreBtn');
-      if (currentIndex >= allUrls.length) {
-        loadMoreBtn.style.display = 'none';
-      } else {
-        loadMoreBtn.style.display = 'inline-block';
-      }
-    }
-
-    function loadMoreImages() {
+  async function fetchAllImages() {
+    try {
+      const res = await fetch(`${API_URL}/images`);
+      if (!res.ok) throw new Error('Nie udało się załadować zdjęć');
+      allUrls = await res.json();
+      currentIndex = 0;
+      document.getElementById('gallery').innerHTML = '';
       displayImages();
+    } catch (err) {
+      console.error(err);
+      alert('Nie można załadować galerii.');
+    }
+  }
+
+  function displayImages() {
+    const gallery = document.getElementById('gallery');
+    const nextBatch = allUrls.slice(currentIndex, currentIndex + pageSize);
+
+    const mediaHtml = nextBatch.map((url, idx) => {
+      if (isVideo(url)) {
+        return `
+          <video
+            src="${url}"
+            loading="lazy"
+            onclick="openLightbox(${currentIndex + idx})"
+            muted
+            playsinline
+            preload="metadata"
+            style="width: 100%; aspect-ratio: 1 / 1; border-radius: 8px; cursor: pointer; object-fit: cover; border: 1px solid #e0d7cd; box-shadow: 0 4px 10px rgba(0,0,0,0.05);"
+          ></video>`;
+      } else {
+        return `
+          <img 
+            src="${url}" 
+            alt="Wspomnienie ze ślubu" 
+            loading="lazy" 
+            onclick="openLightbox(${currentIndex + idx})"
+            onerror="this.onerror=null; this.src='placeholder.jpg';"
+          />`;
+      }
+    }).join('');
+
+    gallery.insertAdjacentHTML('beforeend', mediaHtml);
+    currentIndex += pageSize;
+
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    if (currentIndex >= allUrls.length) {
+      loadMoreBtn.style.display = 'none';
+    } else {
+      loadMoreBtn.style.display = 'inline-block';
+    }
+  }
+
+  function loadMoreImages() {
+    displayImages();
+  }
+
+  function openLightbox(index) {
+    currentLightboxIndex = index;
+    const overlay = document.getElementById('lightboxOverlay');
+    const lightboxImg = document.getElementById('lightboxImage');
+    const lightboxVideo = document.getElementById('lightboxVideo');
+
+    const url = allUrls[index];
+    if (isVideo(url)) {
+      lightboxImg.style.display = 'none';
+      lightboxVideo.style.display = 'block';
+      lightboxVideo.src = url;
+      lightboxVideo.play();
+    } else {
+      lightboxVideo.pause();
+      lightboxVideo.style.display = 'none';
+      lightboxVideo.src = '';
+      lightboxImg.style.display = 'block';
+      lightboxImg.src = url;
     }
 
-    function openLightbox(index) {
-      currentLightboxIndex = index;
+    overlay.style.display = 'flex';
+    document.body.style.overflow = 'hidden'; // prevent background scroll
+  }
+
+  function closeLightbox(event) {
+    if (event.target.id === 'lightboxOverlay') {
       const overlay = document.getElementById('lightboxOverlay');
+      overlay.style.display = 'none';
       const lightboxImg = document.getElementById('lightboxImage');
       const lightboxVideo = document.getElementById('lightboxVideo');
 
-      const url = allUrls[index];
-      if (isVideo(url)) {
-        lightboxImg.style.display = 'none';
-        lightboxVideo.style.display = 'block';
-        lightboxVideo.src = url;
-        lightboxVideo.play();
-      } else {
-        lightboxVideo.pause();
-        lightboxVideo.style.display = 'none';
-        lightboxVideo.src = '';
-        lightboxImg.style.display = 'block';
-        lightboxImg.src = url;
-      }
-      
-      overlay.style.display = 'flex';
-      document.body.style.overflow = 'hidden'; // prevent background scroll
+      lightboxImg.src = '';
+      lightboxImg.style.display = 'none';
+
+      lightboxVideo.pause();
+      lightboxVideo.src = '';
+      lightboxVideo.style.display = 'none';
+
+      document.body.style.overflow = 'auto';
     }
+  }
 
-    function closeLightbox(event) {
-      // Only close if clicking on overlay itself, not buttons or media
-      if (event.target.id === 'lightboxOverlay') {
-        const overlay = document.getElementById('lightboxOverlay');
-        overlay.style.display = 'none';
-        const lightboxImg = document.getElementById('lightboxImage');
-        const lightboxVideo = document.getElementById('lightboxVideo');
-
-        lightboxImg.src = '';
-        lightboxImg.style.display = 'none';
-
-        lightboxVideo.pause();
-        lightboxVideo.src = '';
-        lightboxVideo.style.display = 'none';
-
-        document.body.style.overflow = 'auto';
-      }
+  function prevImage(event) {
+    event.stopPropagation();
+    if (currentLightboxIndex > 0) {
+      currentLightboxIndex--;
+    } else {
+      currentLightboxIndex = allUrls.length - 1;
     }
+    updateLightboxImage();
+  }
 
-    function prevImage(event) {
-      event.stopPropagation(); // prevent closing lightbox
-      if (currentLightboxIndex > 0) {
-        currentLightboxIndex--;
-      } else {
-        currentLightboxIndex = allUrls.length - 1; // loop to last
-      }
-      updateLightboxImage();
+  function nextImage(event) {
+    event.stopPropagation();
+    if (currentLightboxIndex < allUrls.length - 1) {
+      currentLightboxIndex++;
+    } else {
+      currentLightboxIndex = 0;
     }
+    updateLightboxImage();
+  }
 
-    function nextImage(event) {
-      event.stopPropagation();
-      if (currentLightboxIndex < allUrls.length - 1) {
-        currentLightboxIndex++;
-      } else {
-        currentLightboxIndex = 0; // loop to first
-      }
-      updateLightboxImage();
+  function updateLightboxImage() {
+    const url = allUrls[currentLightboxIndex];
+    const lightboxImg = document.getElementById('lightboxImage');
+    const lightboxVideo = document.getElementById('lightboxVideo');
+
+    if (isVideo(url)) {
+      lightboxImg.style.display = 'none';
+      lightboxVideo.style.display = 'block';
+      lightboxVideo.src = url;
+      lightboxVideo.play();
+    } else {
+      lightboxVideo.pause();
+      lightboxVideo.style.display = 'none';
+      lightboxVideo.src = '';
+      lightboxImg.style.display = 'block';
+      lightboxImg.src = url;
     }
+  }
 
-    function updateLightboxImage() {
-      const url = allUrls[currentLightboxIndex];
-      const lightboxImg = document.getElementById('lightboxImage');
-      const lightboxVideo = document.getElementById('lightboxVideo');
-
-      if (isVideo(url)) {
-        lightboxImg.style.display = 'none';
-        lightboxVideo.style.display = 'block';
-        lightboxVideo.src = url;
-        lightboxVideo.play();
-      } else {
+  // Initial fetch when page loads
+  window.onload = fetchAllImages;
+</script>
