@@ -25,24 +25,16 @@ app.post('/upload', upload.any(), async (req, res) => {
       return res.status(400).json({ error: 'No files uploaded' });
     }
 
-    // Array to hold the URLs of uploaded files
     const uploadPromises = req.files.map(file => {
       return new Promise((resolve, reject) => {
         const filename = `${Date.now()}-${file.originalname}`;
         const blob = bucket.file(filename);
-
         const blobStream = blob.createWriteStream({
           resumable: false,
-          metadata: {
-            contentType: file.mimetype,
-          },
+          metadata: { contentType: file.mimetype },
         });
 
-        blobStream.on('error', (err) => {
-          console.error('Blob stream error:', err);
-          reject(err);
-        });
-
+        blobStream.on('error', err => reject(err));
         blobStream.on('finish', () => {
           const publicUrl = `https://storage.googleapis.com/${bucket.name}/${blob.name}`;
           resolve(publicUrl);
@@ -51,6 +43,16 @@ app.post('/upload', upload.any(), async (req, res) => {
         blobStream.end(file.buffer);
       });
     });
+
+    const publicUrls = await Promise.all(uploadPromises);
+    res.status(200).json({ urls: publicUrls });
+
+  } catch (err) {
+    console.error('Server error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 
     // Wait for all files to upload
     const publicUrls = await Promise.all(uploadPromises);
