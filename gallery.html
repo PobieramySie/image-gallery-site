@@ -180,7 +180,13 @@
       const gallery = document.getElementById('gallery');
       const nextBatch = allUrls.slice(currentIndex, currentIndex + pageSize);
       const imgsHtml = nextBatch.map((url, idx) =>
-        `<img src="${url}" alt="Wspomnienie ze ślubu" loading="lazy" onclick="openLightbox(${currentIndex + idx})" />`
+        `<img 
+           src="${url}" 
+           alt="Wspomnienie ze ślubu" 
+           loading="lazy" 
+           onclick="openLightbox(${currentIndex + idx})"
+           onerror="this.onerror=null; this.src='placeholder.jpg';"
+        />`
       ).join('');
       gallery.insertAdjacentHTML('beforeend', imgsHtml);
       currentIndex += pageSize;
