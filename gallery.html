@@ -156,7 +156,10 @@
 
   <!-- Lightbox overlay -->
   <div id="lightboxOverlay" onclick="closeLightbox(event)">
-    <img id="lightboxImage" src="" alt="Expanded view" />
+    <div id="lightboxMediaContainer">
+      <img id="lightboxImage" src="" alt="Expanded view" style="display: none;" />
+      <video id="lightboxVideo" controls style="display: none;"></video>
+    </div>
     <div id="lightboxControls">
       <button class="lightboxBtn" onclick="prevImage(event)">◀ Poprzednie</button>
       <button class="lightboxBtn" onclick="nextImage(event)">Następne ▶</button>
