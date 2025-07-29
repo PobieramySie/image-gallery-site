@@ -19,7 +19,7 @@ const upload = multer({
 });
 
 // Upload endpoint
-app.post('/upload', upload.single('image'), async (req, res) => {
+app.post('/upload', upload.single('file'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
