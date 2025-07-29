@@ -22,39 +22,48 @@ const upload = multer({
 app.post('/upload', upload.any(), async (req, res) => {
   try {
     if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ error: 'No file uploaded' });
+      return res.status(400).json({ error: 'No files uploaded' });
     }
 
-    // Just pick the first uploaded file (you can extend to multiple if needed)
-    const file = req.files[0];
+    // Array to hold the URLs of uploaded files
+    const uploadPromises = req.files.map(file => {
+      return new Promise((resolve, reject) => {
+        const filename = `${Date.now()}-${file.originalname}`;
+        const blob = bucket.file(filename);
 
-    const filename = `${Date.now()}-${file.originalname}`;
-    const blob = bucket.file(filename);
+        const blobStream = blob.createWriteStream({
+          resumable: false,
+          metadata: {
+            contentType: file.mimetype,
+          },
+        });
 
-    const blobStream = blob.createWriteStream({
-      resumable: false,
-      metadata: {
-        contentType: file.mimetype,
-      },
+        blobStream.on('error', (err) => {
+          console.error('Blob stream error:', err);
+          reject(err);
+        });
+
+        blobStream.on('finish', () => {
+          const publicUrl = `https://storage.googleapis.com/${bucket.name}/${blob.name}`;
+          resolve(publicUrl);
+        });
+
+        blobStream.end(file.buffer);
+      });
     });
 
-    blobStream.on('error', (err) => {
-      console.error('Blob stream error:', err);
-      res.status(500).json({ error: 'Upload error' });
-    });
+    // Wait for all files to upload
+    const publicUrls = await Promise.all(uploadPromises);
 
-    blobStream.on('finish', () => {
-      const publicUrl = `https://storage.googleapis.com/${bucket.name}/${blob.name}`;
-      res.status(200).json({ url: publicUrl });
-    });
-
-    blobStream.end(file.buffer);
+    // Respond with all uploaded file URLs
+    res.status(200).json({ urls: publicUrls });
 
   } catch (err) {
     console.error('Server error:', err);
     res.status(500).json({ error: 'Server error' });
   }
 });
+
 
 
 // List images endpoint
