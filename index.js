@@ -1,7 +1,6 @@
 const express = require('express');
 const multer = require('multer');
 const cors = require('cors');
-const path = require('path');
 const { Storage } = require('@google-cloud/storage');
 
 const app = express();
@@ -52,21 +51,6 @@ app.post('/upload', upload.any(), async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
-
-
-    // Wait for all files to upload
-    const publicUrls = await Promise.all(uploadPromises);
-
-    // Respond with all uploaded file URLs
-    res.status(200).json({ urls: publicUrls });
-
-  } catch (err) {
-    console.error('Server error:', err);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-
 
 // List images endpoint
 app.get('/images', async (req, res) => {
