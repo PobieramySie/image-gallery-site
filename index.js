@@ -19,22 +19,27 @@ const upload = multer({
 });
 
 // Upload endpoint
-app.post('/upload', upload.single('file'), async (req, res) => {
+app.post('/upload', upload.any(), async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
 
-    const filename = `${Date.now()}-${req.file.originalname}`;
+    // Just pick the first uploaded file (you can extend to multiple if needed)
+    const file = req.files[0];
+
+    const filename = `${Date.now()}-${file.originalname}`;
     const blob = bucket.file(filename);
 
     const blobStream = blob.createWriteStream({
       resumable: false,
       metadata: {
-        contentType: req.file.mimetype,
+        contentType: file.mimetype,
       },
     });
 
     blobStream.on('error', (err) => {
-      console.error(err);
+      console.error('Blob stream error:', err);
       res.status(500).json({ error: 'Upload error' });
     });
 
@@ -43,12 +48,14 @@ app.post('/upload', upload.single('file'), async (req, res) => {
       res.status(200).json({ url: publicUrl });
     });
 
-    blobStream.end(req.file.buffer);
+    blobStream.end(file.buffer);
+
   } catch (err) {
-    console.error(err);
+    console.error('Server error:', err);
     res.status(500).json({ error: 'Server error' });
   }
 });
+
 
 // List images endpoint
 app.get('/images', async (req, res) => {
