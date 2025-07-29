@@ -70,10 +70,10 @@
     Dziękujemy, że byliście z nami w tym wyjątkowym dniu. Możecie podzielić się swoimi zdjęciami albo obejrzeć piękne chwile uchwycone przez innych.
   </p>
 
-  <a href="#" onclick="document.getElementById('fileInput').click();" class="button">Prześlij zdjęcia</a>
+  <a href="#" onclick="document.getElementById('fileInput').click();" class="button">Prześlij zdjęcia lub filmy</a>
   <a href="gallery.html" class="button">Zobacz całą galerię</a>
 
-  <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="uploadImage()" />
+  <input type="file" id="fileInput" accept="image/*,video/*" style="display:none" onchange="uploadFile()" />
 
   <footer>
     Dziękujemy za wspólne wspomnienia!
@@ -81,20 +81,20 @@
 
   <script>
     const API_URL = 'https://gallery-api-1000866423573.europe-west1.run.app';
-
-    async function uploadImage() {
+  
+    async function uploadFile() {
       const file = document.getElementById('fileInput').files[0];
       if (!file) return;
-
+  
       const formData = new FormData();
-      formData.append('image', file);
-
+      formData.append('file', file); // Use 'file' instead of 'image' if backend expects general files
+  
       try {
         const res = await fetch(`${API_URL}/upload`, {
           method: 'POST',
           body: formData
         });
-
+  
         if (!res.ok) throw new Error('Upload failed');
         const data = await res.json();
         alert('Uploaded: ' + data.url);
@@ -104,6 +104,7 @@
       }
     }
   </script>
+
 
 </body>
 </html>
