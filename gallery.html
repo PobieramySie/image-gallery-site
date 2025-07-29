@@ -28,11 +28,12 @@
       padding: 1em 0;
     }
     
-    #gallery img {
-      width: 100%;           /* full width of grid cell */
-      aspect-ratio: 1 / 1;   /* keep height equal to width */
+    #gallery img,
+    #gallery video {
+      width: 100%;
+      aspect-ratio: 1 / 1;
       border-radius: 8px;
-      object-fit: cover;     /* crop image to fill square */
+      object-fit: cover;
       border: 1px solid #e0d7cd;
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
       transition: transform 0.2s ease;
@@ -40,7 +41,8 @@
       loading: lazy;
     }
 
-    #gallery img:hover {
+    #gallery img:hover,
+    #gallery video:hover {
       transform: scale(1.05);
       box-shadow: 0 6px 14px rgba(0, 0, 0, 0.1);
     }
@@ -92,7 +94,8 @@
         grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
         gap: 8px;
       }
-      #gallery img {
+      #gallery img,
+      #gallery video {
         height: 90px;
       }
     }
@@ -174,12 +177,17 @@
     const pageSize = 20;
     let currentLightboxIndex = -1;
 
+    function isVideo(url) {
+      return url.match(/\.(mp4|webm|ogg)$/i);
+    }
+
     async function fetchAllImages() {
       try {
         const res = await fetch(`${API_URL}/images`);
         if (!res.ok) throw new Error('Nie udało się załadować zdjęć');
         allUrls = await res.json();
         currentIndex = 0;
+        document.getElementById('gallery').innerHTML = '';
         displayImages();
       } catch (err) {
         console.error(err);
@@ -190,19 +198,34 @@
     function displayImages() {
       const gallery = document.getElementById('gallery');
       const nextBatch = allUrls.slice(currentIndex, currentIndex + pageSize);
-      const imgsHtml = nextBatch.map((url, idx) =>
-        `<img 
-           src="${url}" 
-           alt="Wspomnienie ze ślubu" 
-           loading="lazy" 
-           onclick="openLightbox(${currentIndex + idx})"
-           onerror="this.onerror=null; this.src='placeholder.jpg';"
-        />`
-      ).join('');
-      gallery.insertAdjacentHTML('beforeend', imgsHtml);
+      
+      const mediaHtml = nextBatch.map((url, idx) => {
+        if (isVideo(url)) {
+          return `
+            <video
+              src="${url}"
+              loading="lazy"
+              onclick="openLightbox(${currentIndex + idx})"
+              muted
+              playsinline
+              preload="metadata"
+              style="width: 100%; aspect-ratio: 1 / 1; border-radius: 8px; cursor: pointer; object-fit: cover; border: 1px solid #e0d7cd; box-shadow: 0 4px 10px rgba(0,0,0,0.05);"
+            ></video>`;
+        } else {
+          return `
+            <img 
+              src="${url}" 
+              alt="Wspomnienie ze ślubu" 
+              loading="lazy" 
+              onclick="openLightbox(${currentIndex + idx})"
+              onerror="this.onerror=null; this.src='placeholder.jpg';"
+            />`;
+        }
+      }).join('');
+      
+      gallery.insertAdjacentHTML('beforeend', mediaHtml);
       currentIndex += pageSize;
 
-      // Hide load more button if no more images
       const loadMoreBtn = document.getElementById('loadMoreBtn');
       if (currentIndex >= allUrls.length) {
         loadMoreBtn.style.display = 'none';
@@ -219,17 +242,41 @@
       currentLightboxIndex = index;
       const overlay = document.getElementById('lightboxOverlay');
       const lightboxImg = document.getElementById('lightboxImage');
-      lightboxImg.src = allUrls[index];
+      const lightboxVideo = document.getElementById('lightboxVideo');
+
+      const url = allUrls[index];
+      if (isVideo(url)) {
+        lightboxImg.style.display = 'none';
+        lightboxVideo.style.display = 'block';
+        lightboxVideo.src = url;
+        lightboxVideo.play();
+      } else {
+        lightboxVideo.pause();
+        lightboxVideo.style.display = 'none';
+        lightboxVideo.src = '';
+        lightboxImg.style.display = 'block';
+        lightboxImg.src = url;
+      }
+      
       overlay.style.display = 'flex';
       document.body.style.overflow = 'hidden'; // prevent background scroll
     }
 
     function closeLightbox(event) {
-      // Only close if clicking on overlay itself, not buttons or image
+      // Only close if clicking on overlay itself, not buttons or media
       if (event.target.id === 'lightboxOverlay') {
         const overlay = document.getElementById('lightboxOverlay');
         overlay.style.display = 'none';
-        document.getElementById('lightboxImage').src = '';
+        const lightboxImg = document.getElementById('lightboxImage');
+        const lightboxVideo = document.getElementById('lightboxVideo');
+
+        lightboxImg.src = '';
+        lightboxImg.style.display = 'none';
+
+        lightboxVideo.pause();
+        lightboxVideo.src = '';
+        lightboxVideo.style.display = 'none';
+
         document.body.style.overflow = 'auto';
       }
     }
@@ -255,12 +302,13 @@
     }
 
     function updateLightboxImage() {
+      const url = allUrls[currentLightboxIndex];
       const lightboxImg = document.getElementById('lightboxImage');
-      lightboxImg.src = allUrls[currentLightboxIndex];
-    }
+      const lightboxVideo = document.getElementById('lightboxVideo');
 
-    window.onload = fetchAllImages;
-  </script>
-
-</body>
-</html>
+      if (isVideo(url)) {
+        lightboxImg.style.display = 'none';
+        lightboxVideo.style.display = 'block';
+        lightboxVideo.src = url;
+        lightboxVideo.play();
+      } else {
