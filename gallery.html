@@ -140,6 +140,7 @@
       color: #1F2A35;
       user-select: none;
       transition: background-color 0.3s ease;
+      font-family: 'Playfair Display', serif;
     }
     .lightboxBtn:hover {
       background: #7FA1C4;
@@ -183,14 +184,14 @@
   async function fetchAllImages() {
     try {
       const res = await fetch(`${API_URL}/images`);
-      if (!res.ok) throw new Error('Nie udało się załadować zdjęć');
+      if (!res.ok) throw new Error('Nie udało się załadować zdjęć. Prosimy spróbować ponownie.');
       allUrls = await res.json();
       currentIndex = 0;
       document.getElementById('gallery').innerHTML = '';
       displayImages();
     } catch (err) {
       console.error(err);
-      alert('Nie można załadować galerii.');
+      alert('Nie można załadować galerii. Prosimy spróbować ponownie.');
     }
   }
 
