@@ -8,8 +8,8 @@
   <style>
     body {
       font-family: 'Lato', sans-serif;
-      background-color: #F0F4F8; /* #F5F5F5; */ /*#fffaf7; */
-      color: #1F2A35; /* #2E2E2E; */ /* #5c443b; */
+      background-color: #F0F4F8;
+      color: #1F2A35;
       text-align: center;
       padding: 2rem;
       margin: 0;
@@ -28,7 +28,7 @@
     }
     .button {
       display: inline-block;
-      background-color: #A0B9D9; /* #b49876; */
+      background-color: #A0B9D9;
       color: #1F2A35;
       padding: 12px 28px;
       margin: 0.5em;
@@ -41,12 +41,12 @@
       font-family: 'Lato', sans-serif;
     }
     .button:hover {
-      background-color: #7FA1C4; /* #9c7c61; */
+      background-color: #7FA1C4;
     }
     footer {
       margin-top: 3rem;
       font-size: 0.8em;
-      color: #1F2A35; /* #999; */
+      color: #1F2A35;
     }
     @media (max-width: 600px) {
       h1 {
@@ -55,6 +55,23 @@
       .button {
         width: 80%;
       }
+    }
+
+    /* Loading screen styles */
+    #loadingScreen {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background-color: rgba(255, 255, 255, 0.9);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      z-index: 9999;
+    }
+    #uploadProgress {
+      width: 300px;
+      height: 20px;
     }
   </style>
 </head>
@@ -69,8 +86,13 @@
   <a href="#" onclick="document.getElementById('fileInput').click();" class="button">Prześlij zdjęcia lub filmy</a>
   <a href="gallery.html" class="button">Zobacz całą galerię</a>
 
-  <!-- Allow multiple files -->
   <input type="file" id="fileInput" accept="image/*,video/*" multiple style="display:none" onchange="uploadFiles()" />
+
+  <!-- Loading screen -->
+  <div id="loadingScreen">
+    <p>Przesyłanie... <span id="progressPercent">0%</span></p>
+    <progress id="uploadProgress" value="0" max="100"></progress>
+  </div>
 
   <footer>
     Po załadowaniu plików pojawi się potwierdzenie ich przesłania. Dziękujemy za wspólne wspomnienia!
@@ -79,38 +101,64 @@
   <script>
     const API_URL = 'https://gallery-api-1000866423573.europe-west1.run.app';
 
-    async function uploadFiles() {
+    function uploadFiles() {
       const input = document.getElementById('fileInput');
-      if (!input.files.length) return;
+      const files = input.files;
+      if (!files.length) return;
 
       const formData = new FormData();
-      // Append all selected files under the same field name "files"
-      for (const file of input.files) {
+      for (const file of files) {
         formData.append('files', file);
       }
 
-      try {
-        const res = await fetch(`${API_URL}/upload`, {
-          method: 'POST',
-          body: formData,
-        });
+      const loadingScreen = document.getElementById('loadingScreen');
+      const progressBar = document.getElementById('uploadProgress');
+      const progressText = document.getElementById('progressPercent');
 
-        if (!res.ok) throw new Error('Upload failed');
+      loadingScreen.style.display = 'flex';
+      progressBar.value = 0;
+      progressText.textContent = '0%';
 
-        const data = await res.json();
-        if (data.urls && Array.isArray(data.urls)) {
-          alert('Uploaded files:\n' + data.urls.join('\n'));
-        } else {
-          alert('Upload succeeded, but no URLs returned.');
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `${API_URL}/upload`);
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percent = Math.round((event.loaded / event.total) * 100);
+          progressBar.value = percent;
+          progressText.textContent = `${percent}%`;
         }
-      } catch (err) {
-        console.error(err);
-        alert('Upload failed.');
-      } finally {
-        // Reset input after upload so same files can be re-uploaded if needed
+      };
+
+      xhr.onload = () => {
+        loadingScreen.style.display = 'none';
         input.value = '';
-      }
+        if (xhr.status === 200) {
+          const data = JSON.parse(xhr.responseText);
+          if (data.urls && Array.isArray(data.urls)) {
+            alert('Przesłane pliki:\n' + data.urls.join('\n'));
+          } else {
+            alert('Pliki zostały przesłane, ale nie otrzymano linków.');
+          }
+        } else {
+          alert('Błąd przesyłania plików.');
+        }
+      };
+
+      xhr.onerror = () => {
+        loadingScreen.style.display = 'none';
+        alert('Błąd podczas przesyłania.');
+      };
+
+      xhr.send(formData);
     }
+
+    // Optional: warn user before leaving during upload
+    window.onbeforeunload = function () {
+      if (document.getElementById('loadingScreen').style.display === 'flex') {
+        return 'Trwa przesyłanie plików. Czy na pewno chcesz opuścić stronę?';
+      }
+    };
   </script>
 
 </body>
