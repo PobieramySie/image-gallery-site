@@ -1,72 +1,61 @@
 const express = require('express');
-const multer = require('multer');
 const cors = require('cors');
 const { Storage } = require('@google-cloud/storage');
 
 const app = express();
 app.use(cors());
+app.use(express.json()); // to parse JSON bodies
 
-// Set up Google Cloud Storage
+// Initialize Google Cloud Storage
 const storage = new Storage();
-const bucketName = 'my-image-gallery-bucket';
-const bucket = storage.bucket(bucketName);
+const bucket = storage.bucket('image-gallery-ippb'); // Your bucket name
 
-// Configure multer for in-memory upload
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 2 * 1024 * 1024 * 1024 }, // 2GB
-});
-
-// Upload endpoint
-app.post('/upload', upload.any(), async (req, res) => {
+// Generate signed URL for upload
+app.post('/generate-signed-url', async (req, res) => {
   try {
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ error: 'No files uploaded' });
+    const { filename, contentType } = req.body;
+
+    if (!filename || !contentType) {
+      return res.status(400).json({ error: 'Missing filename or contentType' });
     }
 
-    const uploadPromises = req.files.map(file => {
-      return new Promise((resolve, reject) => {
-        const filename = `${Date.now()}-${file.originalname}`;
-        const blob = bucket.file(filename);
-        const blobStream = blob.createWriteStream({
-          resumable: false,
-          metadata: { contentType: file.mimetype },
-        });
+    // Sanitize filename (optional, but recommended)
+    const safeFilename = filename.replace(/[^a-z0-9_.-]/gi, '_');
+    const destination = `${Date.now()}-${safeFilename}`;
+    const file = bucket.file(destination);
 
-        blobStream.on('error', err => reject(err));
-        blobStream.on('finish', () => {
-          const publicUrl = `https://storage.googleapis.com/${bucket.name}/${blob.name}`;
-          resolve(publicUrl);
-        });
+    const options = {
+      version: 'v4',
+      action: 'write',
+      expires: Date.now() + 15 * 60 * 1000, // 15 minutes
+      contentType,
+    };
 
-        blobStream.end(file.buffer);
-      });
-    });
+    const [signedUrl] = await file.getSignedUrl(options);
 
-    const publicUrls = await Promise.all(uploadPromises);
-    res.status(200).json({ urls: publicUrls });
-
+    res.status(200).json({ signedUrl, publicUrl: `https://storage.googleapis.com/${bucket.name}/${destination}` });
   } catch (err) {
-    console.error('Server error:', err);
-    res.status(500).json({ error: 'Server error' });
+    console.error('Error generating signed URL:', err);
+    res.status(500).json({ error: 'Could not generate signed URL' });
   }
 });
 
-// List images endpoint
+// List images endpoint (unchanged)
 app.get('/images', async (req, res) => {
   try {
     const [files] = await bucket.getFiles();
-    const urls = files.map(
-      (file) => `https://storage.googleapis.com/${bucket.name}/${file.name}`
+    const urls = files.map(file =>
+      `https://storage.googleapis.com/${bucket.name}/${file.name}`
     );
     res.status(200).json(urls);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Could not list images' });
+    console.error('Error fetching images:', err);
+    res.status(500).json({ error: 'Failed to list images' });
   }
 });
 
-const port = process.env.PORT || 8080;
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+// Start the server on the Cloud Run expected port
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, () => {
+  console.log(`Server is listening on port ${PORT}`);
 });
