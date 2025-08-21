@@ -99,66 +99,101 @@
   </footer>
 
   <script>
-    const API_URL = 'https://gallery-api-1000866423573.europe-west1.run.app';
+  const API_URL = 'https://gallery-api-ippb-1000866423573.europe-west1.run.app';
 
-    function uploadFiles() {
-      const input = document.getElementById('fileInput');
-      const files = input.files;
-      if (!files.length) return;
+  async function uploadFiles() {
+    const input = document.getElementById('fileInput');
+    const files = input.files;
+    if (!files.length) return;
 
-      const formData = new FormData();
+    const loadingScreen = document.getElementById('loadingScreen');
+    const progressBar = document.getElementById('uploadProgress');
+    const progressText = document.getElementById('progressPercent');
+
+    loadingScreen.style.display = 'flex';
+    progressBar.value = 0;
+    progressText.textContent = '0%';
+
+    try {
+      const uploadedUrls = [];
+
+      // Calculate total size of all files
+      const totalBytes = Array.from(files).reduce((sum, file) => sum + file.size, 0);
+      let uploadedBytes = 0;
+
+      // For each file, request a signed URL and upload
       for (const file of files) {
-        formData.append('files', file);
+        const response = await fetch(`${API_URL}/generate-signed-url`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            filename: file.name,
+            contentType: file.type || 'application/octet-stream',
+          }),
+        });
+
+        if (!response.ok) throw new Error('Nie udało się wygenerować URL do przesłania.');
+
+        const { signedUrl, publicUrl } = await response.json();
+
+        // Upload file and track progress
+        await new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('PUT', signedUrl);
+          xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+
+          let previousLoaded = 0;
+
+          xhr.upload.onprogress = (event) => {
+            if (event.lengthComputable) {
+              const delta = event.loaded - previousLoaded;
+              previousLoaded = event.loaded;
+
+              uploadedBytes += delta;
+
+              const percent = Math.min(Math.round((uploadedBytes / totalBytes) * 100), 100);
+              progressBar.value = percent;
+              progressText.textContent = `${percent}%`;
+
+              console.log(`[DEBUG] Uploading ${file.name}: +${delta} bytes → ${uploadedBytes}/${totalBytes} → ${percent}%`);
+            }
+          };
+
+          xhr.onload = () => {
+            if (xhr.status === 200 || xhr.status === 201) {
+              resolve();
+            } else {
+              reject(new Error(`Upload failed with status ${xhr.status}`));
+            }
+          };
+
+          xhr.onerror = () => reject(new Error('Błąd sieci podczas przesyłania.'));
+          xhr.send(file);
+        });
+
+        uploadedUrls.push(publicUrl);
       }
 
-      const loadingScreen = document.getElementById('loadingScreen');
-      const progressBar = document.getElementById('uploadProgress');
-      const progressText = document.getElementById('progressPercent');
+      loadingScreen.style.display = 'none';
+      input.value = '';
+      alert('Przesłane pliki:\n' + uploadedUrls.join('\n'));
 
-      loadingScreen.style.display = 'flex';
       progressBar.value = 0;
       progressText.textContent = '0%';
 
-      const xhr = new XMLHttpRequest();
-      xhr.open('POST', `${API_URL}/upload`);
-
-      xhr.upload.onprogress = (event) => {
-        if (event.lengthComputable) {
-          const percent = Math.round((event.loaded / event.total) * 100);
-          progressBar.value = percent;
-          progressText.textContent = `${percent}%`;
-        }
-      };
-
-      xhr.onload = () => {
-        loadingScreen.style.display = 'none';
-        input.value = '';
-        if (xhr.status === 200) {
-          const data = JSON.parse(xhr.responseText);
-          if (data.urls && Array.isArray(data.urls)) {
-            alert('Przesłane pliki:\n' + data.urls.join('\n'));
-          } else {
-            alert('Pliki zostały przesłane, ale nie otrzymano linków.');
-          }
-        } else {
-          alert('Błąd przesyłania plików.');
-        }
-      };
-
-      xhr.onerror = () => {
-        loadingScreen.style.display = 'none';
-        alert('Błąd podczas przesyłania.');
-      };
-
-      xhr.send(formData);
+    } catch (err) {
+      loadingScreen.style.display = 'none';
+      console.error(err);
+      alert('Błąd podczas przesyłania: ' + err.message);
     }
+  }
 
-    // Optional: warn user before leaving during upload
-    window.onbeforeunload = function () {
-      if (document.getElementById('loadingScreen').style.display === 'flex') {
-        return 'Trwa przesyłanie plików. Czy na pewno chcesz opuścić stronę?';
-      }
-    };
+  // Optional: warn before leaving if uploading
+  window.onbeforeunload = function () {
+    if (document.getElementById('loadingScreen').style.display === 'flex') {
+      return 'Trwa przesyłanie plików. Czy na pewno chcesz opuścić stronę?';
+    }
+  };
   </script>
 
 </body>
